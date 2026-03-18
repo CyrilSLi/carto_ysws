@@ -26,7 +26,16 @@
     <script>
         const map = new maptalks.Map("map", {
             center: [0, 0],
-            spacialReference: "IDENTITY",
+            /* spatialReference: {
+                projection: "IDENTITY",
+                resolutions: (() => {
+                    const res = [];
+                    for (let i = 0; i <= 6; i++) {
+                        res.push(2048 / Math.pow(2, i*2));
+                    }
+                    return res;
+                })()
+            }, */
             zoom: 0,
             maxZoom: 24,
             baseLayer: new maptalks.TileLayer("base", {
@@ -34,16 +43,42 @@
                 maxAvailableZoom: 6
             })
         });
-
-        returnHome = function () {
-            map.fitExtent(new maptalks.Extent(-32, -64, 32, 64));
+        function pixelCoords(x, y) {
+            // originX and originY are in the range of [-1, 1]
+            originX = (x - 4096) / 8192;
+            originY = (-y + 8192) / 8192;
+            return maptalks.projection.EPSG3857.unproject(new maptalks.Coordinate(originX * Math.PI * 6378137, originY * Math.PI * 6378137));
         }
-        returnHome();
-        document.addEventListener("keydown", function (event) {
-            if (event.code === "Space") {
-                returnHome();
-            }
-        });
+
+
+
+        function flyAndFlatten(x1, y1, x2, y2) {
+            map.flyTo({
+                zoom: map.getFitZoom(new maptalks.Extent(pixelCoords(x1, y1), pixelCoords(x2, y2))),
+                center: pixelCoords((x1 + x2) / 2, (y1 + y2) / 2),
+                pitch: 0,
+                bearing: 0
+            }, {
+                duration: 500
+            });
+        }
+        flyAndFlatten(1630, 3940, 6560, 12440);
+
+
+
+        const quickAccess = [
+            new maptalks.Marker(pixelCoords(4096             , 2025 + 8192 + 100))
+                .addEventListener("click",                 flyAndFlatten.bind(null,  1630,        8192,       6560,               8192 + 4096)),
+            new maptalks.Marker(pixelCoords(2460 + 0    + 100, 1436 + 8192 + 100))
+                .addEventListener("click",                 flyAndFlatten.bind(null,  -4096 + 50,  128,        -4096 + 50 + 5580,  928 + 7000)),
+            new maptalks.Marker(pixelCoords(1436 + 4096 + 100, 1436 + 8192 + 100))
+                .addEventListener("click",                 flyAndFlatten.bind(null,  4096 + 2562, 128,        4096 + 2562 + 5580, 928 + 7000)),
+            new maptalks.Marker(pixelCoords(2460 + 0    + 100, 2460 + 8192 + 100))
+                .addEventListener("click",                 flyAndFlatten.bind(null,  -4096 + 50,  8192 + 256, -4096 + 50 + 5580,  8192 + 1142 + 7000)),
+            new maptalks.Marker(pixelCoords(1436 + 4096 + 100, 2460 + 8192 + 100))
+                .addEventListener("click",                 flyAndFlatten.bind(null,  4096 + 2562, 8192 + 256, 4096 + 2562 + 5580, 8192 + 1142 + 7000)),
+        ];
+        new maptalks.VectorLayer("quickAccess", quickAccess).addTo(map);
     </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-import os, shutil, subprocess
+import os, shutil, subprocess, sys
 from tqdm import trange
 
 def mkdirs(path):
@@ -6,10 +6,13 @@ def mkdirs(path):
         os.makedirs(os.path.dirname(path))
     return path
 
-temp_name = "/tmp/carto_ysws_tile_temp.png"
-temp_name_crop = "/tmp/carto_ysws_tile_temp_%d.png"
+temp_name = mkdirs("/tmp/carto_ysws_tile_temp/temp.png")
+temp_name_crop = os.path.join(os.path.dirname(temp_name), "temp_%d.png")
 orig_file = "inkscape_tiles/export/Page_%d.png"
 os.makedirs("tile/", exist_ok=True)
+
+if sys.argv[1] in ("-r", "--refresh"):
+    shutil.rmtree("tile/", ignore_errors=True)
 
 
 
@@ -81,3 +84,8 @@ for i in trange(4, desc="Zoom 1"):
 for i in trange(1, desc="Zoom 0"):
     subprocess.run(["magick", "montage", "-tile", "4x4", "-geometry", "+0+0"] + [f"tile/2/{i//4}/{i%4}.png" for i in range(16)] + [temp_name])
     subprocess.run(["magick", temp_name, "-resize", "256x256", mkdirs("tile/0/0/0.png")])
+
+
+
+# Cleanup
+shutil.rmtree(os.path.dirname(temp_name), ignore_errors=True)
