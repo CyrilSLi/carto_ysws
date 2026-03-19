@@ -80,27 +80,27 @@
 
 
         linkButtons = [ // x, y, xSize, ySize, height, url
-            [-1500 + 4096, 2400 + 4096,  3000, 600, 10240, "placeholder_3000x600"],
+            [-1500 + 4096, 2400 + 4096,  3000, 600, 10240, "https://forms.fillout.com/t/c9e8GFnMnSus", "RSVP Now!"],
 
-            [100 - 4096,   3082 + 4096,  2100, 300, 5120,  "placeholder_2100x300"],
-            [3480 - 4096,  3082 + 4096,  2100, 300, 5120,  "placeholder_2100x300"],
-            [100 - 4096,   3482 + 4096,  2100, 300, 5120,  "placeholder_2100x300"],
+            [100 - 4096,   3082 + 4096,  2100, 300, 5120,  "https://hackclub.com", "Hack Club Homepage"],
+            [3480 - 4096,  3082 + 4096,  2100, 300, 5120,  "https://ysws.hackclub.com", "YSWS Programs Page"],
+            [100 - 4096,   3482 + 4096,  2100, 300, 5120,  "https://flavortown.hackclub.com", "Flavortown Event Page"],
             [3480 - 4096,  3482 + 4096,  2100, 300, 5120,  "placeholder_2100x300"],
 
-            [2612 + 4096,  3082 + 4096,  2100, 300, 5120,  "placeholder_2100x300"],
-            [1896 + 8192,  3082 + 4096,  2100, 300, 5120,  "placeholder_2100x300"],
-            [2612 + 4096,  3482 + 4096,  2100, 300, 5120,  "placeholder_2100x300"],
+            [2612 + 4096,  3082 + 4096,  2100, 300, 5120,  "https://www.openstreetmap.org", "OpenStreetMap"],
+            [1896 + 8192,  3082 + 4096,  2100, 300, 5120,  "https://bit.ly/475khg3", "MapCSS Specification"],
+            [2612 + 4096,  3482 + 4096,  2100, 300, 5120,  "https://bit.ly/475DxtY", "MapCSS Slideshow"],
             [1896 + 8192,  3482 + 4096,  2100, 300, 5120,  "placeholder_2100x300"],
 
-            [100 - 4096,   3296 + 12288, 2100, 300, 5120,  "placeholder_2100x300"],
-            [3480 - 4096,  3296 + 12288, 2100, 300, 5120,  "placeholder_2100x300"],
-            [100 - 4096,   3696 + 12288, 2100, 300, 5120,  "placeholder_2100x300"],
+            [100 - 4096,   3296 + 12288, 2100, 300, 5120,  "https://hackclub.com/slack", "Hack Club Slack"],
+            [3480 - 4096,  3296 + 12288, 2100, 300, 5120,  "https://josm.openstreetmap.de/wiki/Styles", "JOSM MapCSS Map Styles"],
+            [100 - 4096,   3696 + 12288, 2100, 300, 5120,  "https://bit.ly/4bvOKFo", "JOSM Command Line Rendering"],
             [3480 - 4096,  3696 + 12288, 2100, 300, 5120,  "placeholder_2100x300"],
 
-            [2612 + 4096,  3296 + 12288, 2100, 300, 5120,  "placeholder_2100x300"],
-            [1896 + 8192,  3296 + 12288, 2100, 300, 5120,  "placeholder_2100x300"],
-            [2612 + 4096,  3696 + 12288, 2100, 300, 5120,  "placeholder_2100x300"],
-            [1896 + 8192,  3696 + 12288, 2100, 300, 5120,  "placeholder_2100x300"]
+            [2612 + 4096,  3296 + 12288, 2100, 300, 5120,  "https://bit.ly/4uBByr5", "Mapnik (true)"],
+            [1896 + 8192,  3296 + 12288, 2100, 300, 5120,  "https://bit.ly/41boU4H", "JOSM Standard Style"],
+            [2612 + 4096,  3696 + 12288, 2100, 300, 5120,  "https://bit.ly/3P9uFNM", "Coloured Streets"],
+            [1896 + 8192,  3696 + 12288, 2100, 300, 5120,  "https://bit.ly/4dv3XJp", "Lanes and Road Attributes"]
         ]
 
         const useThreeJS = confirm('Use Three.js for 3D buttons? Please select "Cancel" if you are on a mobile device or have limited graphics performance.');
@@ -197,16 +197,19 @@
                 }
             }
         } else {
-            const buttonsLayer = new maptalks.VectorLayer("linkButtons", linkButtons.map(([x, y, xSize, ySize, height, url]) => {
+            const buttonsLayer = new maptalks.VectorLayer("linkButtons", linkButtons.map(([x, y, xSize, ySize, height, url, altText]) => {
                 const buttonExtent = new maptalks.Extent(pixelCoords(x, y), pixelCoords(x + xSize, y + ySize));
                 const marker = new maptalks.Marker(buttonExtent.getCenter(), {
                     properties: {
-                        name: url,
+                        name: `${url}\n${altText || "Link"}`
                     },
                     symbol: {
                         textFaceName: "sans-serif",
                         textName: "{name}",
-                        textSize: 20
+                        textSize: 24,
+                        textFill: "#000",
+                        textHaloFill: "#fff",
+                        textHaloRadius: 5,
                     }
                 });
                 marker.addEventListener("click", () => {
