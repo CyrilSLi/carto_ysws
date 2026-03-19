@@ -85,17 +85,17 @@
             [100 - 4096,   3082 + 4096,  2100, 300, 5120,  "https://hackclub.com", "Hack Club Homepage"],
             [3480 - 4096,  3082 + 4096,  2100, 300, 5120,  "https://ysws.hackclub.com", "YSWS Programs Page"],
             [100 - 4096,   3482 + 4096,  2100, 300, 5120,  "https://flavortown.hackclub.com", "Flavortown Event Page"],
-            [3480 - 4096,  3482 + 4096,  2100, 300, 5120,  "placeholder_2100x300"],
+            [3480 - 4096,  3482 + 4096,  2100, 300, 5120,  "https://example.com", "Placeholder Link"],
 
             [2612 + 4096,  3082 + 4096,  2100, 300, 5120,  "https://www.openstreetmap.org", "OpenStreetMap"],
             [1896 + 8192,  3082 + 4096,  2100, 300, 5120,  "https://bit.ly/475khg3", "MapCSS Specification"],
             [2612 + 4096,  3482 + 4096,  2100, 300, 5120,  "https://bit.ly/475DxtY", "MapCSS Slideshow"],
-            [1896 + 8192,  3482 + 4096,  2100, 300, 5120,  "placeholder_2100x300"],
+            [1896 + 8192,  3482 + 4096,  2100, 300, 5120,  "https://example.com", "Placeholder Link"],
 
             [100 - 4096,   3296 + 12288, 2100, 300, 5120,  "https://hackclub.com/slack", "Hack Club Slack"],
-            [3480 - 4096,  3296 + 12288, 2100, 300, 5120,  "https://josm.openstreetmap.de/wiki/Styles", "JOSM MapCSS Map Styles"],
+            [3480 - 4096,  3296 + 12288, 2100, 300, 5120,  "https://bit.ly/3PiBc8Q", "JOSM MapCSS Map Styles"],
             [100 - 4096,   3696 + 12288, 2100, 300, 5120,  "https://bit.ly/4bvOKFo", "JOSM Command Line Rendering"],
-            [3480 - 4096,  3696 + 12288, 2100, 300, 5120,  "placeholder_2100x300"],
+            [3480 - 4096,  3696 + 12288, 2100, 300, 5120,  "https://example.com", "Placeholder Link"],
 
             [2612 + 4096,  3296 + 12288, 2100, 300, 5120,  "https://bit.ly/4uBByr5", "Mapnik (true)"],
             [1896 + 8192,  3296 + 12288, 2100, 300, 5120,  "https://bit.ly/41boU4H", "JOSM Standard Style"],
@@ -114,7 +114,7 @@
                 scene.add(new THREE.AmbientLight());
                 linkButtons.forEach(([x, y, xSize, ySize, height, url]) => {
                     const buttonExtent = new maptalks.Extent(pixelCoords(x, y), pixelCoords(x + xSize, y + ySize));
-                    const imageURL = `images/${url.replace(/[^a-zA-Z0-9]/g, "_")}.png`;
+                    const imageURL = `images/${url.replace(/[^a-zA-Z0-9]+/g, "_")}.png`;
                     if (!loadedTextures[imageURL]) {
                         loadedTextures[imageURL] = textureLoader.load(imageURL);
                         console.log(`Loaded texture: ${imageURL}`);
@@ -156,7 +156,6 @@
                     console.log(`Added button at (${x}, ${y}) with size ${xSize}x${ySize}`);
                 });
                 this.prepareToDraw = null;
-                flyAndFlatten(1630, 3940, 6560, 12440);
             };
 
             // https://github.com/maptalks/maptalks.three/blob/master/demo/custom-imageplane.html
@@ -218,6 +217,7 @@
                 return marker;
             })).addTo(map);
         }
+        flyAndFlatten(1630, 3940, 6560, 12440);
     </script>
 </body>
 </html>
