@@ -79,10 +79,6 @@
 
 
 
-        const buttonsLayer = new maptalks.ThreeLayer("linkButtons").addTo(map);
-        const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.5, transparent: true });
-        const textureLoader = new THREE.TextureLoader();
-
         linkButtons = [ // x, y, xSize, ySize, height, url
             [-1500 + 4096, 2400 + 4096,  3000, 600, 10240, "placeholder_3000x600"],
 
@@ -107,92 +103,117 @@
             [1896 + 8192,  3696 + 12288, 2100, 300, 5120,  "placeholder_2100x300"]
         ]
 
-        const loadedTextures = {};
-        buttonsLayer.prepareToDraw = function(gl, scene, camera) {
-            scene.add(new THREE.AmbientLight());
-            linkButtons.forEach(([x, y, xSize, ySize, height, url]) => {
-                const buttonExtent = new maptalks.Extent(pixelCoords(x, y), pixelCoords(x + xSize, y + ySize));
-                const imageURL = `images/${url.replace(/[^a-zA-Z0-9]/g, "_")}.png`;
-                if (!loadedTextures[imageURL]) {
-                    loadedTextures[imageURL] = textureLoader.load(imageURL);
-                    console.log(`Loaded texture: ${imageURL}`);
+        const useThreeJS = confirm('Use Three.js for 3D buttons? Please select "Cancel" if you are on a mobile device or have limited graphics performance.');
+        if (useThreeJS) {
+            const buttonsLayer = new maptalks.ThreeLayer("linkButtons").addTo(map);
+            const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.5, transparent: true });
+            const textureLoader = new THREE.TextureLoader();
+
+            const loadedTextures = {};
+            buttonsLayer.prepareToDraw = function(gl, scene, camera) {
+                scene.add(new THREE.AmbientLight());
+                linkButtons.forEach(([x, y, xSize, ySize, height, url]) => {
+                    const buttonExtent = new maptalks.Extent(pixelCoords(x, y), pixelCoords(x + xSize, y + ySize));
+                    const imageURL = `images/${url.replace(/[^a-zA-Z0-9]/g, "_")}.png`;
+                    if (!loadedTextures[imageURL]) {
+                        loadedTextures[imageURL] = textureLoader.load(imageURL);
+                        console.log(`Loaded texture: ${imageURL}`);
+                    }
+                    const image = new ImagePlane(buttonExtent, {
+                        altitude: height,
+                        imageWidth: xSize,
+                        imageHeight: ySize,
+                    }, loadedTextures[imageURL], buttonsLayer);
+                    this.addMesh(image);
+
+                    const geoParams = image.geometry.parameters;
+                    const frontBackWalls = new THREE.PlaneGeometry(geoParams.width, height);
+                    const frontWall = new THREE.Mesh(frontBackWalls, wallMaterial);
+                    frontWall.position.set(0, -geoParams.height / 2, height / 2);
+                    frontWall.rotation.x = Math.PI / 2;
+                    const backWall = new THREE.Mesh(frontBackWalls, wallMaterial);
+                    backWall.position.set(0, geoParams.height / 2, height / 2);
+                    backWall.rotation.x = -Math.PI / 2;
+
+                    const leftRightWalls = new THREE.PlaneGeometry(geoParams.height, height);
+                    const leftWall = new THREE.Mesh(leftRightWalls, wallMaterial);
+                    leftWall.position.set(-geoParams.width / 2, 0, height / 2);
+                    leftWall.rotation.x = Math.PI / 2;
+                    leftWall.rotation.y = -Math.PI / 2;
+                    const rightWall = new THREE.Mesh(leftRightWalls, wallMaterial);
+                    rightWall.position.set(geoParams.width / 2, 0, height / 2);
+                    rightWall.rotation.x = Math.PI / 2;
+                    rightWall.rotation.y = Math.PI / 2;
+
+                    const wallGroup = new THREE.Group();
+                    wallGroup.add(frontWall, backWall, leftWall, rightWall);
+                    wallGroup.position.copy(this.coordinateToVector3(buttonExtent.getCenter(), 0));
+                    scene.add(wallGroup);
+
+                    image.addEventListener("click", () => {
+                        window.open(url, "_blank");
+                    });
+                    console.log(`Added button at (${x}, ${y}) with size ${xSize}x${ySize}`);
+                });
+                this.prepareToDraw = null;
+                flyAndFlatten(1630, 3940, 6560, 12440);
+            };
+
+            // https://github.com/maptalks/maptalks.three/blob/master/demo/custom-imageplane.html
+            class ImagePlane extends maptalks.BaseObject {
+                constructor(extent, options, texture, layer) {
+                    options = maptalks.Util.extend({}, options, { layer, extent });
+                    const { altitude, imageHeight, imageWidth, factor, filterIndex } = options;
+                    const { xmin, ymin, xmax, ymax } = extent;
+                    const coords = [
+                        [xmin, ymin],
+                        [xmin, ymax],
+                        [xmax, ymax],
+                        [xmax, ymin]
+                    ];
+                    let vxmin = Infinity, vymin = Infinity, vxmax = -Infinity, vymax = -Infinity;
+                    coords.forEach(coord => {
+                        const v = layer.coordinateToVector3(coord);
+                        const { x, y } = v;
+                        vxmin = Math.min(x, vxmin);
+                        vymin = Math.min(y, vymin);
+                        vxmax = Math.max(x, vxmax);
+                        vymax = Math.max(y, vymax);
+                    });
+                    const w = Math.abs(vxmax - vxmin), h = Math.abs(vymax - vymin);
+                    const material = new THREE.MeshBasicMaterial();
+                    material.map = texture;
+                    material.opacity = 1;
+                    material.transparent = true;
+                    material.needsUpdate = true;
+
+                    const geometry = new THREE.PlaneGeometry(w, h, imageWidth - 1, imageHeight - 1);
+                    super();
+                    this.geometry = geometry;
+                    this._initOptions(options);
+                    this._createMesh(geometry, material);
+                    const v = layer.coordinateToVector3(extent.getCenter(), altitude);
+                    this.getObject3d().position.copy(v);
                 }
-                const image = new ImagePlane(buttonExtent, {
-                    altitude: height,
-                    imageWidth: xSize,
-                    imageHeight: ySize,
-                }, loadedTextures[imageURL], buttonsLayer);
-                this.addMesh(image);
-
-                const geoParams = image.geometry.parameters;
-                const frontBackWalls = new THREE.PlaneGeometry(geoParams.width, height);
-                const frontWall = new THREE.Mesh(frontBackWalls, wallMaterial);
-                frontWall.position.set(0, -geoParams.height / 2, height / 2);
-                frontWall.rotation.x = Math.PI / 2;
-                const backWall = new THREE.Mesh(frontBackWalls, wallMaterial);
-                backWall.position.set(0, geoParams.height / 2, height / 2);
-                backWall.rotation.x = -Math.PI / 2;
-
-                const leftRightWalls = new THREE.PlaneGeometry(geoParams.height, height);
-                const leftWall = new THREE.Mesh(leftRightWalls, wallMaterial);
-                leftWall.position.set(-geoParams.width / 2, 0, height / 2);
-                leftWall.rotation.x = Math.PI / 2;
-                leftWall.rotation.y = -Math.PI / 2;
-                const rightWall = new THREE.Mesh(leftRightWalls, wallMaterial);
-                rightWall.position.set(geoParams.width / 2, 0, height / 2);
-                rightWall.rotation.x = Math.PI / 2;
-                rightWall.rotation.y = Math.PI / 2;
-
-                const wallGroup = new THREE.Group();
-                wallGroup.add(frontWall, backWall, leftWall, rightWall);
-                wallGroup.position.copy(this.coordinateToVector3(buttonExtent.getCenter(), 0));
-                scene.add(wallGroup);
-
-                image.addEventListener("click", () => {
+            }
+        } else {
+            const buttonsLayer = new maptalks.VectorLayer("linkButtons", linkButtons.map(([x, y, xSize, ySize, height, url]) => {
+                const buttonExtent = new maptalks.Extent(pixelCoords(x, y), pixelCoords(x + xSize, y + ySize));
+                const marker = new maptalks.Marker(buttonExtent.getCenter(), {
+                    properties: {
+                        name: url,
+                    },
+                    symbol: {
+                        textFaceName: "sans-serif",
+                        textName: "{name}",
+                        textSize: 20
+                    }
+                });
+                marker.addEventListener("click", () => {
                     window.open(url, "_blank");
                 });
-                console.log(`Added button at (${x}, ${y}) with size ${xSize}x${ySize}`);
-            });
-            this.prepareToDraw = null;
-            flyAndFlatten(1630, 3940, 6560, 12440);
-        };
-
-        // https://github.com/maptalks/maptalks.three/blob/master/demo/custom-imageplane.html
-        class ImagePlane extends maptalks.BaseObject {
-            constructor(extent, options, texture, layer) {
-                options = maptalks.Util.extend({}, options, { layer, extent });
-                const { altitude, imageHeight, imageWidth, factor, filterIndex } = options;
-                const { xmin, ymin, xmax, ymax } = extent;
-                const coords = [
-                    [xmin, ymin],
-                    [xmin, ymax],
-                    [xmax, ymax],
-                    [xmax, ymin]
-                ];
-                let vxmin = Infinity, vymin = Infinity, vxmax = -Infinity, vymax = -Infinity;
-                coords.forEach(coord => {
-                    const v = layer.coordinateToVector3(coord);
-                    const { x, y } = v;
-                    vxmin = Math.min(x, vxmin);
-                    vymin = Math.min(y, vymin);
-                    vxmax = Math.max(x, vxmax);
-                    vymax = Math.max(y, vymax);
-                });
-                const w = Math.abs(vxmax - vxmin), h = Math.abs(vymax - vymin);
-                const material = new THREE.MeshBasicMaterial();
-                material.map = texture;
-                material.opacity = 1;
-                material.transparent = true;
-                material.needsUpdate = true;
-
-                const geometry = new THREE.PlaneGeometry(w, h, imageWidth - 1, imageHeight - 1);
-                super();
-                this.geometry = geometry;
-                this._initOptions(options);
-                this._createMesh(geometry, material);
-                const v = layer.coordinateToVector3(extent.getCenter(), altitude);
-                this.getObject3d().position.copy(v);
-            }
+                return marker;
+            })).addTo(map);
         }
     </script>
 </body>
