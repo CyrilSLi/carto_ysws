@@ -29,7 +29,7 @@
         const map = new maptalks.Map("map", {
             center: [0, 0],
             zoom: 0,
-            maxZoom: 24,
+            maxZoom: 9,
             baseLayer: new maptalks.TileLayer("base", {
                 urlTemplate: "tile/{z}/{y}/{x}.png",
                 maxAvailableZoom: 6
@@ -43,11 +43,11 @@
             return maptalks.projection.EPSG3857.unproject(new maptalks.Coordinate(originX * Math.PI * 6378137, originY * Math.PI * 6378137));
         }
 
-        function flyAndFlatten(x1, y1, x2, y2) {
+        function flyAndFlatten(x1, y1, x2, y2, pitch = 0) {
             map.flyTo({
                 zoom: map.getFitZoom(new maptalks.Extent(pixelCoords(x1, y1), pixelCoords(x2, y2))),
                 center: pixelCoords((x1 + x2) / 2, (y1 + y2) / 2),
-                pitch: 0,
+                pitch: pitch,
                 bearing: 0
             }, {
                 duration: 500
@@ -103,7 +103,7 @@
             [1896 + 8192,  3696 + 12288, 2100, 300, 5120,  "https://b.link/siv3rqey", "Lanes and Road Attributes"]
         ]
 
-        const useThreeJS = confirm('Use Three.js for 3D buttons? Please select "Cancel" if you are on a mobile device or have limited graphics performance.');
+        const useThreeJS = confirm("This is a 3D interactive map. Pan with left click/one finger drag, zoom with scroll/pinch, and rotate in 3D with right click/two finger drag.\nWould you like to enable 3D image buttons? They require high graphics performance but are more immersive.");
         if (useThreeJS) {
             const buttonsLayer = new maptalks.ThreeLayer("linkButtons").addTo(map);
             const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.5, transparent: true });
@@ -217,7 +217,7 @@
                 return marker;
             })).addTo(map);
         }
-        flyAndFlatten(1630, 3940, 6560, 12440);
+        flyAndFlatten(1630, 3940, 6560, 12440, pitch = 45);
     </script>
 </body>
 </html>
