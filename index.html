@@ -103,7 +103,10 @@
             [1896 + 8192,  3696 + 12288, 2100, 300, 5120,  "https://b.link/1tvwf3vg", "Waterways"]
         ]
 
-        const useThreeJS = confirm("This is a 3D interactive map. Pan with left click/one finger drag, zoom with scroll/pinch, and rotate in 3D with right click/two finger drag.\nWould you like to enable 3D image buttons? They require high graphics performance but are much more immersive.");
+        const useThreeJS = confirm(
+            "This is a 3D interactive map. Pan with left mouse button/one finger drag, zoom with scroll/pinch, and rotate in 3D with right mouse button/two finger drag.\n" +
+            "Do you want to enable 3D image links? They are performance-intensive but much more immersive. If the 3D links render but do not respond to clicks, try the non-3D version instead."
+        );
         if (useThreeJS) {
             const buttonsLayer = new maptalks.ThreeLayer("linkButtons").addTo(map);
             const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.5, transparent: true });
