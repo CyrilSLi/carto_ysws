@@ -1,2 +1,3 @@
 .dev/
-inkscape_tiles/export/
+inkscape_tiles/export/*
+!inkscape_tiles/export/.gitkeep
