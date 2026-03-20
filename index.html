@@ -31,7 +31,7 @@
             zoom: 0,
             maxZoom: 9,
             baseLayer: new maptalks.TileLayer("base", {
-                urlTemplate: "tile/{z}/{y}/{x}.png",
+                urlTemplate: "tile/{z}/{y}/{x}.jpg",
                 maxAvailableZoom: 6
             })
         });
@@ -85,12 +85,12 @@
             [100 - 4096,   3082 + 4096,  2100, 300, 5120,  "https://hackclub.com", "Hack Club Homepage"],
             [3480 - 4096,  3082 + 4096,  2100, 300, 5120,  "https://ysws.hackclub.com", "YSWS Programs Page"],
             [100 - 4096,   3482 + 4096,  2100, 300, 5120,  "https://flavortown.hackclub.com", "Flavortown Event Page"],
-            [3480 - 4096,  3482 + 4096,  2100, 300, 5120,  "https://example.com", "Placeholder Link"],
+            [3480 - 4096,  3482 + 4096,  2100, 300, 5120,  "javascript:void(0)", "Placeholder Link"],
 
             [2612 + 4096,  3082 + 4096,  2100, 300, 5120,  "https://www.openstreetmap.org", "OpenStreetMap"],
             [1896 + 8192,  3082 + 4096,  2100, 300, 5120,  "https://b.link/4fcbrzua", "MapCSS Specification"],
             [2612 + 4096,  3482 + 4096,  2100, 300, 5120,  "https://b.link/hwtk2x5d", "MapCSS Slideshow"],
-            [1896 + 8192,  3482 + 4096,  2100, 300, 5120,  "https://example.com", "Placeholder Link"],
+            [1896 + 8192,  3482 + 4096,  2100, 300, 5120,  "https://github.com/CyrilSLi/carto_ysws", "Website Source Code"],
 
             [100 - 4096,   3296 + 12288, 2100, 300, 5120,  "https://hackclub.com/slack", "Hack Club Slack"],
             [3480 - 4096,  3296 + 12288, 2100, 300, 5120,  "https://hackatime.hackclub.com", "Hackatime Time Tracker"],
@@ -103,7 +103,7 @@
             [1896 + 8192,  3696 + 12288, 2100, 300, 5120,  "https://b.link/siv3rqey", "Lanes and Road Attributes"]
         ]
 
-        const useThreeJS = confirm("This is a 3D interactive map. Pan with left click/one finger drag, zoom with scroll/pinch, and rotate in 3D with right click/two finger drag.\nWould you like to enable 3D image buttons? They require high graphics performance but are more immersive.");
+        const useThreeJS = confirm("This is a 3D interactive map. Pan with left click/one finger drag, zoom with scroll/pinch, and rotate in 3D with right click/two finger drag.\nWould you like to enable 3D image buttons? They require high graphics performance but are much more immersive.");
         if (useThreeJS) {
             const buttonsLayer = new maptalks.ThreeLayer("linkButtons").addTo(map);
             const wallMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.5, transparent: true });
@@ -114,7 +114,7 @@
                 scene.add(new THREE.AmbientLight());
                 linkButtons.forEach(([x, y, xSize, ySize, height, url]) => {
                     const buttonExtent = new maptalks.Extent(pixelCoords(x, y), pixelCoords(x + xSize, y + ySize));
-                    const imageURL = `images/${url.replace(/[^a-zA-Z0-9]+/g, "_")}.png`;
+                    const imageURL = `images/${url.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "")}.png`;
                     if (!loadedTextures[imageURL]) {
                         loadedTextures[imageURL] = textureLoader.load(imageURL);
                         console.log(`Loaded texture: ${imageURL}`);
@@ -150,9 +150,11 @@
                     wallGroup.position.copy(this.coordinateToVector3(buttonExtent.getCenter(), 0));
                     scene.add(wallGroup);
 
-                    image.addEventListener("click", () => {
-                        window.open(url, "_blank");
-                    });
+                    if (url.startsWith("http")) {
+                        image.addEventListener("click", () => {
+                            window.open(url, "_blank");
+                        });
+                    }
                     console.log(`Added button at (${x}, ${y}) with size ${xSize}x${ySize}`);
                 });
                 this.prepareToDraw = null;
@@ -196,7 +198,7 @@
                 }
             }
         } else {
-            const buttonsLayer = new maptalks.VectorLayer("linkButtons", linkButtons.map(([x, y, xSize, ySize, height, url, altText]) => {
+            const buttonsLayer = linkButtons.map(([x, y, xSize, ySize, height, url, altText]) => {
                 const buttonExtent = new maptalks.Extent(pixelCoords(x, y), pixelCoords(x + xSize, y + ySize));
                 const marker = new maptalks.Marker(buttonExtent.getCenter(), {
                     properties: {
@@ -205,17 +207,46 @@
                     symbol: {
                         textFaceName: "sans-serif",
                         textName: "{name}",
-                        textSize: 24,
+                        textSize: { stops: [[0, 0], [1, 0], [2, 4], [3, 12], [4, 24], [5, 48], [6, 96], [7, 192], [8, 384], [9, 768]] },
                         textFill: "#000",
                         textHaloFill: "#fff",
-                        textHaloRadius: 5,
+                        textHaloRadius: { stops: [[0, 0], [1, 0], [2, 1], [3, 4], [4, 6], [5, 12], [6, 24], [7, 48], [8, 96], [9, 192]] },
                     }
                 });
                 marker.addEventListener("click", () => {
                     window.open(url, "_blank");
                 });
                 return marker;
-            })).addTo(map);
+            });
+            new maptalks.VectorLayer("linkButtons", buttonsLayer).addTo(map);
+            let prevView = map.getPitch() * 360 + map.getBearing();
+
+            // From Gemini
+            function getAdjustedTextRotation(bearing, pitch) {
+                // 1. Convert degrees to radians for JavaScript Math functions
+                const bearingRad = bearing * (Math.PI / 180);
+                const pitchRad = pitch * (Math.PI / 180);
+
+                // 2. Calculate the original vector and apply pitch compression to the Y-axis
+                const x = Math.cos(bearingRad);
+                const y = Math.sin(bearingRad) * Math.cos(pitchRad);
+
+                // 3. Calculate the new angle using atan2 to safely handle all quadrants
+                const adjustedRotationRad = Math.atan2(y, x);
+                
+                // 4. Convert back to degrees
+                return adjustedRotationRad * (180 / Math.PI);
+            }
+
+            setInterval(() => {
+                const currentView = map.getPitch() * 360 + map.getBearing();
+                if (currentView !== prevView) {
+                    prevView = currentView;
+                    buttonsLayer.forEach(marker => marker.updateSymbol({
+                        textRotation: getAdjustedTextRotation(map.getBearing(), map.getPitch())
+                    }));
+                }
+            }, 20);
         }
         flyAndFlatten(1630, 3940, 6560, 12440, pitch = 45);
     </script>
