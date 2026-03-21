@@ -53,6 +53,9 @@
                 duration: 500
             });
         }
+        function resetView() {
+            flyAndFlatten(1630, 3940, 6560, 12440, pitch = 30);
+        }
 
 
 
@@ -251,7 +254,15 @@
                 }
             }, 20);
         }
-        flyAndFlatten(1630, 3940, 6560, 12440, pitch = 45);
+
+        new maptalks.control.Toolbar({
+            position: "top-left",
+            items: [{
+                item: "Reset View",
+                click: resetView
+            }]
+        }).addTo(map);
+        window.setTimeout(resetView, 0);
     </script>
 </body>
 </html>
